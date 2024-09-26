@@ -164,7 +164,6 @@ process_file (const char *file_name, const char *new_interp)
 	{
 	  if (shdr[i].sh_type == SHT_SYMTAB || shdr[i].sh_type == SHT_DYNSYM)
 	    {
-
 	      const char *symtab_name = shstrtab + shdr[i].sh_name;
 	      printf ("Symbol Table '%s' (STT_FUNC):\n", symtab_name);
 	      print_symbols (obj, &shdr[i], shdr[shdr[i].sh_link].sh_offset);

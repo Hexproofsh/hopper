@@ -76,4 +76,4 @@ $
 
 Author
 =========
-Copyright 2024 Travis Montoya "travgm"
+Copyright 2024 Travis Montoya "travgm" trav@hexproof.sh
