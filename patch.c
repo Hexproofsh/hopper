@@ -52,3 +52,9 @@ patch_interpreter(Elf64_FileInfo * fi,
 	       interpinfo.new_name);
     }
 }
+
+void
+patch_text_seg_padding(Elf64_FileInfo * fi, char * stub)
+{
+
+}
