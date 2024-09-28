@@ -40,7 +40,7 @@ int process_file(const char *file_name, const char *new_interp)
     Elf64_InterpInfo interpinfo;
     Elf64_FileInfo elfobj;
 
-    /* Init our interpreter info structure to default values*/
+    /* Init our interpreter info structure to default values */
     interpinfo.offset = 0;
     interpinfo.size = 0;
     interpinfo.index = 0;
@@ -53,22 +53,23 @@ int process_file(const char *file_name, const char *new_interp)
     }
 
     elfobj.file_name = strdup(file_name);
-    if (load_elf64_file(&elfobj) != 0) {
-	    fprintf(stderr, "error: unable to load %s\n", elfobj.file_name);
-	    return -1;
+    if (load_elf64_file(&elfobj) != ELF_LOAD_SUCCESS) {
+	fprintf(stderr, "error: unable to load %s\n", elfobj.file_name);
+	return -1;
     }
 
-    if (verify_target_binary(&elfobj.ehdr) != 0) {
-	    fprintf(stderr, "error: %s is not a 64BIT DYN binary\n", elfobj.file_name);
-	    free (elfobj.phdr);
-	    free (elfobj.shdr);
-	    fclose (elfobj.handle);
-	    return -1;
+    if (verify_target_binary(&elfobj.ehdr) != ELF_VALID) {
+	fprintf(stderr, "error: %s is not a 64BIT DYN binary\n",
+		elfobj.file_name);
+	free(elfobj.phdr);
+	free(elfobj.shdr);
+	fclose(elfobj.handle);
+	return -1;
     }
 
     /* Find our PT_INTERP segment, this must exist to continue */
     int seg_idx = find_elf64_segment_index(&elfobj, PT_INTERP);
-    if (seg_idx != -1) {
+    if (seg_idx != SEG_NOT_FOUND) {
 	if (verbose) {
 	    printf("Found PT_INTERP segment at 0x%016lx\n",
 		   elfobj.phdr[seg_idx].p_vaddr);
@@ -100,11 +101,12 @@ int process_file(const char *file_name, const char *new_interp)
 	for (int i = 0; i < elfobj.ehdr.e_shnum; i++) {
 	    if (elfobj.shdr[i].sh_type == SHT_SYMTAB
 		|| elfobj.shdr[i].sh_type == SHT_DYNSYM) {
-		const char *symtab_name = sym_table + elfobj.shdr[i].sh_name;
+		const char *symtab_name =
+		    sym_table + elfobj.shdr[i].sh_name;
 		printf("Symbol Table '%s' (STT_FUNC):\n", symtab_name);
 		print_elf64_symbols(elfobj.handle, &elfobj.shdr[i],
-				    elfobj.shdr[elfobj.shdr[i].sh_link].sh_offset,
-				    STT_FUNC);
+				    elfobj.shdr[elfobj.shdr[i].sh_link].
+				    sh_offset, STT_FUNC);
 	    }
 	}
 
