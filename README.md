@@ -4,15 +4,17 @@ Hopper
 Just a quick hop in the target elf and it modifies the interperter. This tool will allow you to patch the interperter in an ELF64
 target binary with your own. Hopper will display the STT_FUNC types from the```.dynsm``` and ```.symtab``` tables. This gives more
 information on what functions would need to be resolved in your interperter and amongst other things.
+
+UPDATE: Hopper is moving to an ELF64 utility, not just patching the interpreter in ELF64 binaries.
  
 Usage
 =====
 ```
-$ ./hopper
-Hopper the ELF64 PT_INTERP tool by Travis Montoya <trav@hexproof.sh>
+Hopper the ELF64 tool by Travis Montoya <trav@hexproof.sh>
 usage: ./hopper [option(s)] [target]
   -v                 show verbose output
   -s                 display symbol information (STT_FUNC)
+  -c                 dump '.text' section as shellcode
   -d                 display interpreter
   -p [interpreter]   patch interpreter
 
