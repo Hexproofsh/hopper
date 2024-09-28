@@ -33,6 +33,7 @@
 bool verbose = false;
 bool show_symbols = false;
 bool disp_interp = false;
+bool dump_shellcode = false;
 
 int process_file(const char *file_name, const char *new_interp)
 {
@@ -58,7 +59,7 @@ int process_file(const char *file_name, const char *new_interp)
 	return -1;
     }
 
-    if (verify_target_binary(&elfobj.ehdr) != ELF_VALID) {
+    if (verify_elf64_binary(&elfobj.ehdr) != ELF_VALID) {
 	fprintf(stderr, "error: %s is not a 64BIT DYN binary\n",
 		elfobj.file_name);
 	free(elfobj.phdr);
@@ -67,24 +68,30 @@ int process_file(const char *file_name, const char *new_interp)
 	return -1;
     }
 
+    if (dump_shellcode) {
+        parse_elf64_obj_print_shellcode(&elfobj);
+    }
+
     /* Find our PT_INTERP segment, this must exist to continue */
-    int seg_idx = find_elf64_segment_index(&elfobj, PT_INTERP);
-    if (seg_idx != SEG_NOT_FOUND) {
-	if (verbose) {
-	    printf("Found PT_INTERP segment at 0x%016lx\n",
-		   elfobj.phdr[seg_idx].p_vaddr);
-	    printf("Offset: 0x%lx\n", elfobj.phdr[seg_idx].p_offset);
-	    printf("Size: %zu\n", elfobj.phdr[seg_idx].p_filesz);
-	    print_flags(elfobj.phdr[seg_idx].p_flags);
+    if (disp_interp || interpinfo.new_name) {
+	int seg_idx = find_elf64_segment_index(&elfobj, PT_INTERP);
+	if (seg_idx != SEG_NOT_FOUND) {
+	    if (verbose) {
+		printf("Found PT_INTERP segment at 0x%016lx\n",
+		       elfobj.phdr[seg_idx].p_vaddr);
+		printf("Offset: 0x%lx\n", elfobj.phdr[seg_idx].p_offset);
+		printf("Size: %zu\n", elfobj.phdr[seg_idx].p_filesz);
+		print_flags(elfobj.phdr[seg_idx].p_flags);
+	    }
+	    interpinfo.offset = elfobj.phdr[seg_idx].p_offset;
+	    interpinfo.size = (Elf64_Xword) elfobj.phdr[seg_idx].p_filesz;
+	    interpinfo.index = seg_idx;
+	} else {
+	    fprintf(stderr, "error: no PT_INTERP segment found\n");
+	    free(elfobj.phdr);
+	    fclose(elfobj.handle);
+	    return -1;
 	}
-	interpinfo.offset = elfobj.phdr[seg_idx].p_offset;
-	interpinfo.size = (Elf64_Xword) elfobj.phdr[seg_idx].p_filesz;
-	interpinfo.index = seg_idx;
-    } else {
-	fprintf(stderr, "error: no PT_INTERP segment found\n");
-	free(elfobj.phdr);
-	fclose(elfobj.handle);
-	return -1;
     }
 
     /* If -s has been passed we need to get information to display
@@ -105,8 +112,9 @@ int process_file(const char *file_name, const char *new_interp)
 		    sym_table + elfobj.shdr[i].sh_name;
 		printf("Symbol Table '%s' (STT_FUNC):\n", symtab_name);
 		print_elf64_symbols(elfobj.handle, &elfobj.shdr[i],
-				    elfobj.shdr[elfobj.shdr[i].sh_link].
-				    sh_offset, STT_FUNC);
+				    elfobj.shdr[elfobj.shdr[i].
+						sh_link].sh_offset,
+				    STT_FUNC);
 	    }
 	}
 
@@ -155,11 +163,13 @@ int process_file(const char *file_name, const char *new_interp)
 void print_usage(const char *program_name)
 {
     fprintf(stderr,
-	    "Hopper the ELF64 PT_INTERP tool by Travis Montoya <trav@hexproof.sh>\n");
+	    "Hopper the ELF64 tool by Travis Montoya <trav@hexproof.sh>\n");
     fprintf(stderr, "usage: %s [option(s)] [target]\n", program_name);
     fprintf(stderr, "  -v                 show verbose output\n");
     fprintf(stderr,
 	    "  -s                 display symbol information (STT_FUNC)\n");
+    fprintf(stderr,
+	    "  -c                 dump '.text' section as shellcode\n");
     fprintf(stderr, "  -d                 display interpreter\n");
     fprintf(stderr, "  -p [interpreter]   patch interpreter\n");
     fprintf(stderr,
@@ -184,7 +194,7 @@ int main(int argc, char *argv[])
 	return 0;
     }
 
-    while ((opt = getopt(argc, argv, "vsdp:")) != -1) {
+    while ((opt = getopt(argc, argv, "vsdcp:")) != -1) {
 	switch (opt) {
 	case 'v':
 	    verbose = true;
@@ -198,6 +208,9 @@ int main(int argc, char *argv[])
 	case 'p':
 	    interp = optarg;
 	    break;
+	case 'c':
+	    dump_shellcode = true;
+	    break;
 	default:
 	    print_usage(argv[0]);
 	    return 1;
@@ -210,11 +223,12 @@ int main(int argc, char *argv[])
 	return 1;
     }
 
-    if (!disp_interp && !interp) {
-	fprintf(stderr,
-		"error: you must either display interpreter or patch interpreter\n");
-	return 1;
-    }
+    /*
+       if (!disp_interp && !interp) {
+       fprintf(stderr,
+       "error: you must either display interpreter or patch interpreter\n");
+       return 1;
+       } */
 
 
     if (optind < argc) {

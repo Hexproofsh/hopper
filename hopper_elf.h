@@ -15,6 +15,9 @@
 #define SEG_NOT_FOUND -1
 #define SEG_INVALID -1
 
+#define SECTION_FOUND 0
+#define SECTION_NOT_FOUND -1
+
 typedef enum {
     SECTION_TEXT,
     SECTION_DATA,
@@ -62,7 +65,7 @@ void print_usage(const char *program_name);
 
 /* utils.c functions */
 int load_elf64_file(Elf64_FileInfo * fi);
-int verify_target_binary(Elf64_Ehdr * ehdr);
+int verify_elf64_binary(Elf64_Ehdr * ehdr);
 int check_file_access(const char *file_path);
 void print_flags(Elf64_Word p_flags);
 void print_interps();
@@ -81,6 +84,7 @@ Elf64_Phdr find_elf64_segment(Elf64_Ehdr ehdr, Elf64_Phdr * phdr,
 int find_elf64_segment_index(Elf64_FileInfo * fi, uint32_t type);
 Elf64_SectionInfo find_elf64_section_index(Elf64_FileInfo * fi,
 					   section_names section);
-const char *get_elf64_section_str(Elf64_FileInfo * fi, Elf64_Off sec_offset);
+/* parser.c functions */
+int parse_elf64_obj_print_shellcode(Elf64_FileInfo * fi);
 
 #endif

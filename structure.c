@@ -60,33 +60,19 @@ Elf64_SectionInfo find_elf64_section_index(Elf64_FileInfo * fi,
 	return sect_info;
     }
 
+    char *shrstab = get_elf64_symbol_table(fi);
     for (int i = 0; i < fi->ehdr.e_shnum; i++) {
-	Elf64_Off sect_str_off = fi->shdr[i].sh_name;
+	Elf64_Word sect_str_off = fi->shdr[i].sh_name;
 
-	const char *sec_str = get_elf64_section_str(fi, sect_str_off);
-	if (strncmp(sec_str, SECTION_NAME(section), 5) == 0) {
+	const char *sec_name = shrstab + sect_str_off;
+	if (strncmp(sec_name, SECTION_NAME(section), 5) == 0) {
 	    sect_info.offset = fi->shdr[i].sh_offset;
 	    sect_info.size = fi->shdr[i].sh_size;
 	    sect_info.shdr_idx = i;
-	    sect_info.section_name = strdup(sec_str);
+	    sect_info.section_name = strdup(sec_name);
 	    break;
 	}
     }
 
     return sect_info;
-}
-
-/*
- * Given an offset from a section sh_name and the shstrndx we return the 
- * string name
- */
-const char *get_elf64_section_str(Elf64_FileInfo * fi, Elf64_Off sec_offset)
-{
-    static char section_name[6];
-    Elf64_Off table_off = fi->shdr[fi->ehdr.e_shstrndx].sh_offset;
-
-    fseek(fi->handle, table_off + sec_offset, SEEK_SET);
-    fgets(section_name, 6, fi->handle);
-
-    return section_name;
 }

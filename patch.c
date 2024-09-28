@@ -56,5 +56,5 @@ patch_interpreter(Elf64_FileInfo * fi,
 void
 patch_text_seg_padding(Elf64_FileInfo * fi, char * stub)
 {
-
+   printf("Not yet implemented\n");
 }

@@ -53,18 +53,19 @@ int load_elf64_file(Elf64_FileInfo * fi) {
 }
 
 /* Verifies the target binary is ELF64 dynamically linked */
-int verify_target_binary(Elf64_Ehdr * ehdr)
+int verify_elf64_binary(Elf64_Ehdr * ehdr)
 {
     if (memcmp(ehdr->e_ident, ELFMAG, SELFMAG) != 0 ||
 	ehdr->e_ident[EI_CLASS] != ELFCLASS64) {
 	return -1;
     }
 
+    /*
     if (ehdr->e_type != ET_DYN) {
 	return -1;
-    }
+    }*/
 
-    printf("ELF file is a 64-Bit Shared Object (DYN) file\n\n");
+    printf("ELF file is 64-Bit\n\n");
     return 0;
 
 }
