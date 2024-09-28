@@ -18,58 +18,56 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
-#include "hopper.h"
 
-char *
-get_elf64_symbol_table (FILE * obj, Elf64_Ehdr ehdr, Elf64_Shdr * shdr)
+#include "hopper_elf.h"
+
+/* Returns the string table for an ELF64 binary */
+char *get_elf64_symbol_table(Elf64_FileInfo * fi)
 {
-  if (obj == NULL)
-    {
-      return NULL;
+    if (fi == NULL || fi->handle == NULL) {
+	return NULL;
     }
 
-  /* Get the section headers table offset */
-  fseek (obj, ehdr.e_shoff, SEEK_SET);
-  fread (shdr, sizeof (Elf64_Shdr), ehdr.e_shnum, obj);
+    /* Get the section headers table offset */
+    fseek(fi->handle, fi->ehdr.e_shoff, SEEK_SET);
+    fread(fi->shdr, sizeof(Elf64_Shdr), fi->ehdr.e_shnum, fi->handle);
 
-  Elf64_Off table_offset = shdr[ehdr.e_shstrndx].sh_offset;
-  char *shstrtab = malloc (shdr[ehdr.e_shstrndx].sh_size);
-  if (shstrtab == NULL)
-    {
-      return NULL;
+    Elf64_Off table_offset = fi->shdr[fi->ehdr.e_shstrndx].sh_offset;
+    char *shstrtab = malloc(fi->shdr[fi->ehdr.e_shstrndx].sh_size);
+    if (shstrtab == NULL) {
+	return NULL;
     }
 
-  /* Seek to string table and read it into shstrtab */
-  fseek (obj, shdr[ehdr.e_shstrndx].sh_offset, SEEK_SET);
-  fread (shstrtab, shdr[ehdr.e_shstrndx].sh_size, 1, obj);
+    /* Seek to string table and read it into shstrtab */
+    fseek(fi->handle, fi->shdr[fi->ehdr.e_shstrndx].sh_offset, SEEK_SET);
+    fread(shstrtab, fi->shdr[fi->ehdr.e_shstrndx].sh_size, 1, fi->handle);
 
-  return shstrtab;
+    return shstrtab;
 }
 
+/* Print symbols of type 'type' to stdout */
 void
 print_elf64_symbols (FILE * obj, Elf64_Shdr * shdr, long table_offset, Elf64_Word type)
 {
-  Elf64_Sym *sym = NULL;
-  char symbol_name[256];
-  int symbol_cnt = shdr->sh_size / sizeof (Elf64_Sym);
-  int func_cnt = 0;
+    Elf64_Sym *sym = NULL;
+    char symbol_name[256];
+    int symbol_cnt = shdr->sh_size / sizeof(Elf64_Sym);
+    int func_cnt = 0;
 
-  sym = malloc (shdr->sh_size);
+    sym = malloc(shdr->sh_size);
 
-  fseek (obj, shdr->sh_offset, SEEK_SET);
-  fread (sym, shdr->sh_size, 1, obj);
-  for (int i = 0; i < symbol_cnt; i++)
-    {
-      /* if we are at the symbol with specified type print */
-      if (ELF64_ST_TYPE (sym[i].st_info) == type)
-        {
-          fseek (obj, table_offset + sym[i].st_name, SEEK_SET);
-          fgets (symbol_name, sizeof (symbol_name), obj);
+    fseek(obj, shdr->sh_offset, SEEK_SET);
+    fread(sym, shdr->sh_size, 1, obj);
+    for (int i = 0; i < symbol_cnt; i++) {
+	/* if we are at the symbol with specified type print */
+	if (ELF64_ST_TYPE(sym[i].st_info) == type) {
+	    fseek(obj, table_offset + sym[i].st_name, SEEK_SET);
+	    fgets(symbol_name, sizeof(symbol_name), obj);
 
-          printf ("  %d: %016lx %s\n", func_cnt++, sym[i].st_value,
-                  symbol_name);
-        }
+	    printf("  %d: %016lx %s\n", func_cnt++, sym[i].st_value,
+		   symbol_name);
+	}
     }
 
-  free (sym);
+    free(sym);
 }
