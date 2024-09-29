@@ -86,5 +86,6 @@ Elf64_SectionInfo find_elf64_section_index(Elf64_FileInfo * fi,
 					   section_names section);
 /* parser.c functions */
 int parse_elf64_obj_print_shellcode(Elf64_FileInfo * fi);
+int parse_elf64(Elf64_FileInfo * fi);
 
 #endif

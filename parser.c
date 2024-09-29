@@ -23,6 +23,10 @@
 
 #define LINE_BREAK 18
 
+/* 
+ * Finds the text section of an object file and prints it out
+ * as shellcode
+ */
 int parse_elf64_obj_print_shellcode(Elf64_FileInfo * fi) {
 
     if (fi == NULL) {
@@ -63,5 +67,116 @@ int parse_elf64_obj_print_shellcode(Elf64_FileInfo * fi) {
 	printf("\nDetected %d null bytes in shellcode\n", nulls);
     }
 
+    return 0;
+}
+
+/*
+ * Parses the headers and section/program headers of an ELF64 binary
+ */
+int parse_elf64(Elf64_FileInfo * fi) {
+    const int WIDTH = 10;
+
+    if (fi == NULL) {
+	    return -1;
+    }
+
+    printf("ELF Header:\n");
+    printf("  Entry point: 0x%016lx\n", fi->ehdr.e_entry);
+
+    printf("  Type: ");
+    switch (fi->ehdr.e_type) {
+	    case ET_NONE:
+		    printf("No file type\n");
+		    break;
+	    case ET_REL:
+		    printf("Relocatable file\n");
+		    break;
+	    case ET_EXEC:
+		    printf("Executable file\n");
+		    break;
+	    case ET_DYN:
+		    printf("Shared object file\n");
+		    break;
+	    case ET_CORE:
+		    printf("Core file\n");
+		    break;
+	    default:
+		    printf("Unknown\n");
+		    break;
+    }
+
+    printf("  Class: ");
+	switch(fi->ehdr.e_ident[EI_CLASS]) {
+	    case ELFCLASSNONE:
+		    printf("None\n");
+		    break;
+	    case ELFCLASS32:
+		    printf("32-Bit\n");
+		    break;
+	    case ELFCLASS64:
+		    printf("64-Bit\n");
+		    break;
+	    case ELFCLASSNUM:
+		    printf("%d\n", fi->ehdr.e_ident[EI_CLASS]);
+		    break;
+	    default:
+		    printf("Unknown\n");
+		    break;
+	}
+
+    printf("  Data: ");
+    switch(fi->ehdr.e_ident[EI_DATA]) {
+	case ELFDATANONE:
+		printf("Inalid data encoding\n");
+		break;
+	case ELFDATA2LSB:
+		printf("2's complement, little endian\n");
+		break;
+	case ELFDATA2MSB:
+		printf("2's complement, big endian\n");
+		break;
+	case ELFDATANUM:
+		printf("%d\n", fi->ehdr.e_ident[EI_DATA]);
+		break;
+	default:
+		printf("Unknown\n");
+		break;
+    }
+
+
+    printf("  ABI: ");
+    switch(fi->ehdr.e_ident[EI_OSABI]) {
+	case ELFOSABI_NONE:
+		printf("UNIX System V ABI\n");
+		break;
+	case ELFOSABI_NETBSD:
+		printf("NetBSD\n");
+		break;
+	case ELFOSABI_LINUX:
+		printf("GNU\\Linux\n");
+		break;
+	case ELFOSABI_FREEBSD:
+		printf("FreeBSD\n");
+		break;
+	case ELFOSABI_OPENBSD:
+		printf("OpenBSD\n");
+		break;
+	default:
+		printf("Unknown\n");
+		break;
+    }
+
+    printf("  ABI Version: %d\n", fi->ehdr.e_ident[EI_ABIVERSION]);
+    printf("  File Version: %d\n", fi->ehdr.e_ident[EI_VERSION]);
+
+    printf("  Program header offset: 0x%016lx\n", fi->ehdr.e_phoff);
+    printf("  Section header offset: 0x%016lx\n", fi->ehdr.e_shoff);
+    printf("  ELF header size: %d (bytes)\n", fi->ehdr.e_ehsize);
+    printf("  Program header size: %d (bytes)\n", fi->ehdr.e_phentsize);
+    printf("  Program header count: %d\n", fi->ehdr.e_phnum);
+    printf("  Section header size: %d (bytes)\n", fi->ehdr.e_shentsize);
+    printf("  Section header count: %d\n", fi->ehdr.e_shnum);
+    printf("  Section header string table index: %d\n", fi->ehdr.e_shstrndx);
+  
     return 0;
 }

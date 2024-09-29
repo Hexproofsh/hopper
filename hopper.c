@@ -26,6 +26,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <sys/utsname.h>
 
 #include "hopper_elf.h"
 
@@ -34,6 +35,7 @@ bool verbose = false;
 bool show_symbols = false;
 bool disp_interp = false;
 bool dump_shellcode = false;
+bool parse_elf = false;
 
 int process_file(const char *file_name, const char *new_interp)
 {
@@ -66,6 +68,10 @@ int process_file(const char *file_name, const char *new_interp)
 	free(elfobj.shdr);
 	fclose(elfobj.handle);
 	return -1;
+    }
+
+    if (parse_elf) {
+	    parse_elf64(&elfobj);
     }
 
     if (dump_shellcode) {
@@ -162,10 +168,14 @@ int process_file(const char *file_name, const char *new_interp)
 
 void print_usage(const char *program_name)
 {
+    struct utsname osver;
+    uname(&osver);
+
     fprintf(stderr,
-	    "Hopper the ELF64 tool by Travis Montoya <trav@hexproof.sh>\n");
+	    "GNU ELF64 utility running on %s (%s)\n", osver.sysname, osver.release);
     fprintf(stderr, "usage: %s [option(s)] [target]\n", program_name);
     fprintf(stderr, "  -v                 show verbose output\n");
+    fprintf(stderr, "  -i                 display ELF64 binary information\n");
     fprintf(stderr,
 	    "  -s                 display symbol information (STT_FUNC)\n");
     fprintf(stderr,
@@ -175,6 +185,7 @@ void print_usage(const char *program_name)
     fprintf(stderr,
 	    "\nYou can run '%s -search' to list common interpreters on your system\n",
 	    program_name);
+    fprintf(stderr, "\nSee 'LICENSE' for licensing information. Hopper (C) Copyright 2024 hexproof.sh\n");
 }
 
 int main(int argc, char *argv[])
@@ -194,10 +205,13 @@ int main(int argc, char *argv[])
 	return 0;
     }
 
-    while ((opt = getopt(argc, argv, "vsdcp:")) != -1) {
+    while ((opt = getopt(argc, argv, "visdcp:")) != -1) {
 	switch (opt) {
 	case 'v':
 	    verbose = true;
+	    break;
+	case 'i':
+	    parse_elf = true;
 	    break;
 	case 's':
 	    show_symbols = true;
