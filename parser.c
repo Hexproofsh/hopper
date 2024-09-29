@@ -177,6 +177,42 @@ int parse_elf64(Elf64_FileInfo * fi) {
     printf("  Section header size: %d (bytes)\n", fi->ehdr.e_shentsize);
     printf("  Section header count: %d\n", fi->ehdr.e_shnum);
     printf("  Section header string table index: %d\n", fi->ehdr.e_shstrndx);
-  
+
+    printf("Program headers:\n");
+    for (int i = 0; i < fi->ehdr.e_phnum; i++) {
+	switch(fi->phdr[i].p_type) {
+		case PT_LOAD:
+			if (fi->phdr[i].p_offset == 0) {
+				printf("  .text     0x%016lx\n", fi->phdr[i].p_vaddr);
+			} else {
+				printf("  .data     0x%016lx\n", fi->phdr[i].p_vaddr);
+			}
+			break;
+		case PT_PHDR:
+			printf("  Program segment: 0x%016lx\n", fi->phdr[i].p_vaddr);
+			break;
+		case PT_DYNAMIC:
+			printf("  Dynamic segment: 0x%016lx\n", fi->phdr[i].p_vaddr);
+			break;
+		case PT_NOTE:
+			printf("  Note segment: 0x%016lx\n", fi->phdr[i].p_vaddr);
+			break;
+		case PT_INTERP:
+			char * interp = malloc(fi->phdr[i].p_filesz);
+			fseek(fi->handle, fi->phdr[i].p_offset, SEEK_SET);
+			fread(interp, 1, fi->phdr[i].p_filesz, fi->handle);
+			printf("  Interpreter: %s\n", interp);
+			free (interp);
+			break;
+
+	}
+    }
+
+    char *sym_table = get_elf64_symbol_table(fi);
+    printf("Section headers:\n");
+    for (int i = 1; i < fi->ehdr.e_shnum; i++) {
+	printf("  %s    0x%016lx\n", (sym_table + fi->shdr[i].sh_name), fi->shdr[i].sh_addr);
+    }
+
     return 0;
 }
